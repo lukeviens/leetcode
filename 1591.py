@@ -5,65 +5,63 @@ class Solution:
 
         # look for top left and bottom right corners of rectangles
         # find outmost top, left, bottom, and right for each number
-        def build():
+        def build(rects):
             for i in range(m):
                 for j in range(n):
                     num = grid[i][j]
+                    rect = rects.setdefault(num, [i, j, i, j])
 
-                    if num not in rects:
-                        rects[num] = [i, j, i, j]
-                    else:
-                        top, left, bottom, right = rects[num]
+                    if i < rect[0]:
+                        rect[0] = i  # top
+                    if j < rect[1]:
+                        rect[1] = j  # left
 
-                        if i < top:
-                            rects[num][0] = i
-                        if j < left:
-                            rects[num][1] = j
-
-                        if i > bottom:
-                            rects[num][2] = i
-                        if j > right:
-                            rects[num][3] = j
+                    if i > rect[2]:
+                        rect[2] = i  # bottom
+                    if j > rect[3]:
+                        rect[3] = j  # right
 
             # sort by smallest rectangle
-            sorted_rects = sorted(
+            rects = sorted(
                 rects.items(),
                 key=lambda r: (
-                    (r[1][2] - r[1][0] + 1) * (r[1][3] - r[1][1] + 1)
+                    (r[1][2] - r[1][0] + 1) *
+                    (r[1][3] - r[1][1] + 1)
                 )
             )
-
-            rects.clear()
-            rects.update(sorted_rects)
 
 
         # check if a rectangle is blocked
         def blocked(num):
             if num not in blockers:
-                return False
+                return False, None
 
-            if blockers[num] in rects:
-                return True
+            if blockers[num][0] in rects:
+                return True, None
 
+            idx = blockers[num][1]
             del blockers[num]
 
-            return False
+            return False, idx
 
         # for each top left, see if we can reach bottom right
         def check_nums():
             for num in rects.keys():
-                if blocked(num):
+                is_blocked, index = blocked(num)
+                if is_blocked:
                     continue
 
                 top, left, bottom, right = rects[num]
                 t, l, b, r = top, left, bottom, right
 
+                if index:
+                    t, l = index
+
                 # see if it's a full rectangle
                 is_rectangle = True
                 while t != b or l != r:
-
                     if grid[t][l] != num and grid[t][l] not in used:
-                        blockers[num] = grid[t][l]
+                        blockers[num] = [grid[t][l], [t, l]]
                         is_rectangle = False
                         break
 
@@ -89,7 +87,7 @@ class Solution:
         rects = {}  # rects[num] = [top, left, bottom, right]
         blockers = {}  # blockers[num] = num
 
-        build()
+        build(rects)
 
         while rects:
             found, num = check_nums()
